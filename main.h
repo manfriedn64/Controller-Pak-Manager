@@ -39,4 +39,6 @@ u32 memory_size;
 
 u8 contPattern;
 
+u8 show_console;
+
 #endif /* _MAIN_H_*/

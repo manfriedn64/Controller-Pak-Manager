@@ -18,9 +18,9 @@ extern char conbuf[40];
 extern char mem_heap[1024*300];
 
 extern u32 memory_size;
+extern u8 show_console;
 
 
-extern 
 /*----------------------------------------------------------------------*/
 /*	Game startup. 											*/
 /*	IN:	Nothing in particular. 							  	*/
@@ -35,6 +35,7 @@ void mainproc(void* arg)
 	// variable initialization used to count frames per second
 	time_lastframe = 0;
 	frame_number = 0;
+	show_console = 0;
 	
 	/* Initialize graphics */
 	nuGfxInit();

@@ -28,7 +28,7 @@ TEXHFILES 	=
 
 HFILES 		= 	main.h
 
-CODEFILES   	= 	main.c graphics.c controller_pak.c 2dlibrary.c font_tahoma.c
+CODEFILES   	= 	main.c graphics.c controller_pak.c 2dlibrary.c font.c font_tahoma.c user_interface.c
 
 CODEOBJECTS	=	$(CODEFILES:.c=.o) $(NUSYSLIBDIR)/nusys.o
 

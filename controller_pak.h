@@ -11,9 +11,17 @@ typedef struct {
 	u64		last_time;
 } ControllerManager;
 
+typedef struct {
+	u8				visible;
+	int				selected;
+	SelectPakFile 	file;
+} MenuManager;
+
+
 
 void drawTitle();
 void controllerPakInit();
 void readControllerPaks();
+
 
 #endif /* _CONTROLLERPAK_H_*/

@@ -5,6 +5,13 @@ extern Gfx*	gfxListPtr;
 extern Gfx*	gfxListPtr;
 extern My2DLibrary my2dlibrary;
 
+void my2D_clear() {
+	my2dlibrary.currentTextureInTMEM  = NULL;
+	my2d_moveObjectsClear();
+	my2D_backgroundListClear();
+	my2D_spriteListClear();
+}
+
 void my2D_init(short width, short height, u32* texturePointer) {
 	my2dlibrary.currentTextureInTMEM	= NULL;
 	my2dlibrary.width					= width;
@@ -13,7 +20,6 @@ void my2D_init(short width, short height, u32* texturePointer) {
 	my2dlibrary.cycleType				= NULL;
 	my2dlibrary.rgb						= (Rgb){NULL, NULL, NULL};
 	my2dlibrary.texturePointer			= texturePointer;
-	my2d_moveObjectsListClear();
 	return;
 }
 
@@ -63,7 +69,7 @@ void my2D_setColorFill(Rgb rgb) {
 	}
 }
 
-void my2d_moveObjectsListClear() {
+void my2d_moveObjectsClear() {
 	my2d_moveOjectsCount = -1;
 }
 
@@ -87,33 +93,6 @@ Bool my2D_doMoveOject(My2DMoveObject* moveobject) {
 	}
 }
 
-void my2D_drawSelectList(short start_x, short start_y, short end_x, short end_y) {
-	my2D_drawRectangle(start_x, start_y, start_x, end_y, 132, 132, 132, 1);
-	my2D_drawRectangle(start_x, start_y, end_x, start_y, 132, 132, 132, 1);
-	
-	my2D_drawRectangle(start_x+1, start_y+1, start_x+1, end_y-1, 0, 0, 0, 1);
-	my2D_drawRectangle(start_x+1, start_y+1, end_x-2, start_y+1, 0, 0, 0, 1);
-	
-	my2D_drawRectangle(end_x, start_y, end_x, end_y, 255, 255, 255, 1);
-	my2D_drawRectangle(start_x, end_y, end_x, end_y, 255, 255, 255, 1);
-	
-	my2D_drawRectangle(start_x+2, start_y+2, end_x-2, end_y-2, 255, 255, 255, 1);
-	
-	
-	
-}
-void my2D_drawDialogBox(short start_x, short start_y, short end_x, short end_y) {
-	my2D_drawRectangle(start_x, start_y, start_x, end_y, 255, 255, 255, 1);
-	my2D_drawRectangle(start_x, start_y, end_x, start_y, 255, 255, 255, 1);
-
-	my2D_drawRectangle(end_x-1, start_y+1, end_x-1, end_y-1, 132, 132, 132, 1);
-	my2D_drawRectangle(start_x+1, end_y-1, end_x-1, end_y-1, 132, 132, 132, 1);
-	
-	my2D_drawRectangle(end_x, start_y, end_x, end_y, 0, 0, 0, 1);
-	my2D_drawRectangle(start_x, end_y, end_x, end_y, 0, 0, 0, 1);
-	
-	my2D_drawRectangle(start_x+2, start_y+2, end_x-3, start_y+17, 0, 0, 127, 1);
-}
 
 /*
 	void my2D_drawRectangle(short start_x, short start_y, short end_x, short end_y, short red, short green, short blue, short isFilled)
@@ -168,7 +147,7 @@ void my2D_drawSprite(Coordinates* coordinates, int x, int y) {
 		my2dlibrary.currentTextureInTMEM = coordinates->texture->pointer32;
 	}
 	// configure the sprite and draw it
-	sprite = (uObjSprite*)getNextSprite();
+	sprite = (uObjSprite*)my2D_getNextSprite();
 	sprite->s.objX = x << 2; // x screen coordinate
 	sprite->s.objY = y << 2; // y screen coordinate
 	sprite->s.imageW = coordinates->width << 5; // width
@@ -190,7 +169,7 @@ void my2D_drawSprite(Coordinates* coordinates, int x, int y) {
 	
 */
 void my2D_drawBackGroundCoordinates(Coordinates* coordinates, short x, short y, short line) {
-	uObjBg* background = (uObjBg*)getNextObj();
+	uObjBg* background = (uObjBg*)my2D_getNextBackground();
 	if (background) {
 	my2D_setCycleType(G_CYC_COPY);
 	if (x == MY2D_CENTER)
@@ -226,4 +205,52 @@ void my2D_drawFullBackGround(Texture* texture, short x, short y) {
 		my2D_drawBackGroundCoordinates(&coordinates, x, y, 0);
 	}
 	return;
+}
+
+
+/* 
+	The following functions handles the uObjBg objects array and pointers
+ */
+void my2D_backgroundListClear() {
+	my2dlibrary.background_pointer	= &my2dlibrary.background_list[0];
+	my2dlibrary.background_count		= 0;		
+}
+uObjBg* my2D_getNextBackground() {
+	if (my2dlibrary.background_count < MY2D_OBJ_LIST_SIZE) {
+		my2dlibrary.background_pointer = &my2dlibrary.background_list[my2dlibrary.background_count++];
+		my2dlibrary.background_pointer->b.imageLoad 	= G_BGLT_LOADTILE;
+		my2dlibrary.background_pointer->b.imageFmt 		= G_IM_FMT_RGBA;
+		my2dlibrary.background_pointer->b.imageSiz 		= G_IM_SIZ_16b;
+		my2dlibrary.background_pointer->b.imagePal 		= 0;
+		my2dlibrary.background_pointer->b.imageFlip 	= 0;
+		return my2dlibrary.background_pointer;
+	}
+	return 0;
+}
+
+
+/* 
+	The following functions handles the uObjSprite objects array and pointers
+ */
+void my2D_spriteListClear() {
+	my2dlibrary.sprite_pointer = &my2dlibrary.sprite_list[0];
+	my2dlibrary.sprite_count = 0;
+	return;
+}
+ 
+uObjSprite* my2D_getNextSprite() {
+	if (my2dlibrary.sprite_count < MY2D_SPRITE_LIST_SIZE) {
+		my2dlibrary.sprite_pointer = &my2dlibrary.sprite_list[my2dlibrary.sprite_count++];
+		my2dlibrary.sprite_pointer->s.paddingX 		= 0;
+		my2dlibrary.sprite_pointer->s.paddingY 		= 0;
+		my2dlibrary.sprite_pointer->s.imageFmt 		= G_IM_FMT_RGBA;
+		my2dlibrary.sprite_pointer->s.imageSiz 		= G_IM_SIZ_16b;
+		my2dlibrary.sprite_pointer->s.imagePal 		= 0;
+		my2dlibrary.sprite_pointer->s.imageFlags	= 0;
+		my2dlibrary.sprite_pointer->s.scaleH		= 1 << 10;
+		my2dlibrary.sprite_pointer->s.scaleW		= 1 << 10;
+		return my2dlibrary.sprite_pointer;
+	}
+	else
+		return 0;
 }
