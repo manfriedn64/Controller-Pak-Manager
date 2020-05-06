@@ -15,7 +15,7 @@ extern int frame_number;
 extern float random;
 
 extern char conbuf[40];
-extern char mem_heap[1024*300];
+extern char mem_heap[32 * 1024]; 
 
 extern u32 memory_size;
 extern u8 show_console;
@@ -66,8 +66,8 @@ void mainproc(void* arg)
 	*/
 	nuGfxSetZBuffer((u16*)(ZBUFFER_ADDR));
 	
-	/*if (InitHeap(mem_heap, sizeof(mem_heap)) == -1)
-        return;*/
+	if (InitHeap(mem_heap, sizeof(mem_heap)) == -1)
+        return;
 
 	/* Game main */
 	//controllerPakInit();

@@ -41,4 +41,8 @@ u8 contPattern;
 
 u8 show_console;
 
+/* dedicated memory area for malloc */
+char mem_heap[32 * 1024]; 
+
+
 #endif /* _MAIN_H_*/

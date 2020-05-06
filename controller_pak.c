@@ -1,4 +1,5 @@
-#include  <nusys.h>
+#include <nusys.h>
+#include <malloc.h>
 #include "main.h"
 #include "controller_pak.h"
 #include "2dlibrary.h"
@@ -24,7 +25,7 @@ char				tmp_char[100];
 char*				char_ptr;
 SelectPakFile		selected_pak_file;
 ControllerManager	controller_manager;
-MenuManager			menu[4];
+MenuManager			menu[5];
 int					menu_focus;
 
 void readControllerPaks() {
@@ -99,6 +100,8 @@ void readControllerPaks() {
 }
 
 void controllerPakInit() {
+	int i;
+	int nbr_menu = 5;
 	selected_pak_file.pak_number = -1;
 	selected_pak_file.file_number = -1;
 	my2D_init(640, 480, (u32*)(0x80400000 - 640*480*2*2));
@@ -113,10 +116,13 @@ void controllerPakInit() {
 	controller_manager.last_button = -1;
 	controller_manager.last_time = 0;
 	menu_focus = -1;
-	menu[0].visible	= 0;
+	for (i = 0; i < nbr_menu; i++)
+		menu[i].visible	= 0;
+	/*menu[0].visible	= 0;
 	menu[1].visible	= 0;
 	menu[2].visible	= 0;
 	menu[3].visible	= 0;
+	menu[4].visible	= 0;*/
 }
 
 Bool controllerTiming(int button) {
@@ -176,11 +182,12 @@ void strAppendChar(char* string, int c) {
 }
 
 void drawTitle() {
+	s32			ret;
 	int			controller_sprite_position_x, controller_sprite_min_x, controller_sprite_max_x, i;
-	Coordinates tmp_coordinates;
-	int fetch_controller;
-	int controller_pak_plugged[4];
-	int controller_pak_count = 0;
+	Coordinates	tmp_coordinates;
+	int			fetch_controller;
+	int			controller_pak_plugged[4];
+	int			controller_pak_count = 0;
 	
 	//my2D_drawDialogBox(8, 8, my2dlibrary.width-9, my2dlibrary.height-9);
 	my2D_drawDialogBox(MY2D_CENTER, MY2D_CENTER, my2dlibrary.width-16, my2dlibrary.height-16, "Controller Pak Manager UI for Nintendo 64");
@@ -255,6 +262,7 @@ void drawTitle() {
 			font_write(controller_sprite_min_x+10, 345, controller_sprite_max_x - 10, tmp_char);
 		}
 		else {
+			controller_pak_plugged[fetch_controller] = 0;
 			font_config.halign = FONT_CENTER;
 			font_write(controller_sprite_min_x+10, 125, controller_sprite_max_x - 10, "- no controller pak -");
 		}
@@ -307,6 +315,13 @@ void drawTitle() {
 			font_write(180, 240, 460, "Ouch, an error happened.");
 		else
 			font_write(180, 240, 460, "File successfully deleted.\n Press A, B or Start to reload.");
+	}
+	if (menu[4].visible) {
+		my2D_drawDialogBox(MY2D_CENTER, MY2D_CENTER, 300, 100, tmp_char);
+		if (pakFile[menu[2].selected].error)
+			font_write(180, 240, 460, "Ouch, an error happened.");
+		else
+			font_write(180, 240, 460, "File successfully Copied.\n Press A, B or Start to reload.");
 	}
 	
 	nuContDataGetExAll(contData);
@@ -397,14 +412,17 @@ void drawTitle() {
 								pfs_stat[selected_pak_file.pak_number][selected_pak_file.file_number].game_name, 
 								pfs_stat[selected_pak_file.pak_number][selected_pak_file.file_number].ext_name
 							);
+							readControllerPaks();
 							break;
 						case 1:  // cancel deletion
 							menu[1].visible = 0; 
 							menu_focus = 0;
 							break;
 					}		
-				if (contData[0].trigger & B_BUTTON)
-					menu[1].visible = 0;
+				if (contData[0].trigger & B_BUTTON) {
+					menu[1].visible = 0; 
+					menu_focus = 0;
+				}
 				if (controllerTiming(L_JPAD))
 					menu[1].selected--;
 				if (controllerTiming(R_JPAD))
@@ -424,6 +442,45 @@ void drawTitle() {
 						menu[2].visible = 0;
 						menu_focus = 0;
 					} else { // do copy the file
+						nuContPakCodeSet(
+								(u8*)&pfs_stat[selected_pak_file.pak_number][selected_pak_file.file_number].company_code, 
+								(u8*)&pfs_stat[selected_pak_file.pak_number][selected_pak_file.file_number].game_code
+							);
+						nuContPakFileOpen(
+							&pakFile[selected_pak_file.pak_number], 
+							(u8*)&pfs_stat[selected_pak_file.pak_number][selected_pak_file.file_number].game_name, 
+							(u8*)&pfs_stat[selected_pak_file.pak_number][selected_pak_file.file_number].ext_name, 
+							NU_CONT_PAK_MODE_NOCREATE, 
+							pfs_stat[selected_pak_file.pak_number][selected_pak_file.file_number].file_size
+						);
+						char_ptr = (char*)mt_malloc(pfs_stat[selected_pak_file.pak_number][selected_pak_file.file_number].file_size);
+						nuContPakFileRead(
+							&pakFile[selected_pak_file.pak_number],
+							0,
+							pfs_stat[selected_pak_file.pak_number][selected_pak_file.file_number].file_size,
+							char_ptr
+						);
+						ret = nuContPakFileOpen(
+							&pakFile[menu[2].selected], 
+							(u8*)&pfs_stat[selected_pak_file.pak_number][selected_pak_file.file_number].game_name, 
+							(u8*)&pfs_stat[selected_pak_file.pak_number][selected_pak_file.file_number].ext_name, 
+							NU_CONT_PAK_MODE_CREATE, 
+							pfs_stat[selected_pak_file.pak_number][selected_pak_file.file_number].file_size
+						);
+						if (!ret) {
+								nuContPakFileWrite(
+								&pakFile[menu[2].selected],
+								0,
+								pfs_stat[selected_pak_file.pak_number][selected_pak_file.file_number].file_size,
+								char_ptr
+							);
+						}
+						mt_free(char_ptr);
+						menu[0].visible = 0;
+						menu[2].visible = 0;
+						menu[4].visible = 1;
+						menu_focus = 4;
+						readControllerPaks();
 					}
 				}
 				if (controllerTiming(L_JPAD)) 
@@ -443,7 +500,12 @@ void drawTitle() {
 				if (contData[0].trigger & A_BUTTON || contData[0].trigger & B_BUTTON || contData[0].trigger & START_BUTTON) {
 					menu[3].visible = 0;
 					menu_focus = -1;
-					readControllerPaks();
+				}
+				break;
+			case 4: // dialog copy confirmation
+				if (contData[0].trigger & A_BUTTON || contData[0].trigger & B_BUTTON || contData[0].trigger & START_BUTTON) {
+					menu[4].visible = 0;
+					menu_focus = -1;
 				}
 				break;
 		}
@@ -463,6 +525,13 @@ void drawTitle() {
 		nuDebConTextAttr(0, NU_DEB_CON_ATTR_NORMAL);
 		nuDebConTextColor(0, NU_DEB_CON_TEXT_YELLOW);
 
+		sprintf(conbuf, " %d  ", menu[2].selected);
+		nuDebConTextPos(0,25,15);
+		nuDebConCPuts(0, conbuf);
+		sprintf(conbuf, " %d  ", controller_pak_plugged[menu[2].selected]);
+		nuDebConTextPos(0,25,16);
+		nuDebConCPuts(0, conbuf);
+		
 		sprintf(conbuf, "Pak id  : %d  ", selected_pak_file.pak_number);
 		nuDebConTextPos(0,1,22);
 		nuDebConCPuts(0, conbuf);
